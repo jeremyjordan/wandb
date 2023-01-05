@@ -44,9 +44,7 @@ class SockServerInterfaceReaderThread(threading.Thread):
     _socket_client: SockClient
     _stopped: "Event"
 
-    def __init__(
-        self, clients: ClientDict, iface: "InterfaceRelay", stopped: "Event"
-    ) -> None:
+    def __init__(self, clients: ClientDict, iface: "InterfaceRelay", stopped: "Event") -> None:
         self._iface = iface
         self._clients = clients
         threading.Thread.__init__(self)
@@ -82,9 +80,7 @@ class SockServerReadThread(threading.Thread):
     _stopped: "Event"
     _clients: ClientDict
 
-    def __init__(
-        self, conn: socket.socket, mux: StreamMux, clients: ClientDict
-    ) -> None:
+    def __init__(self, conn: socket.socket, mux: StreamMux, clients: ClientDict) -> None:
         self._mux = mux
         threading.Thread.__init__(self)
         self.name = "SockSrvRdThr"
@@ -105,9 +101,7 @@ class SockServerReadThread(threading.Thread):
             assert sreq, "read_server_request should never timeout"
             sreq_type = sreq.WhichOneof("server_request_type")
             shandler_str = "server_" + sreq_type  # type: ignore
-            shandler: "Callable[[spb.ServerRequest], None]" = getattr(  # type: ignore
-                self, shandler_str, None
-            )
+            shandler: "Callable[[spb.ServerRequest], None]" = getattr(self, shandler_str, None)  # type: ignore
             assert shandler, f"unknown handle: {shandler_str}"  # type: ignore
             shandler(sreq)
 
@@ -224,10 +218,12 @@ class DebugThread(threading.Thread):
         threading.Thread.__init__(self)
         self.daemon = True
         self.name = "DebugThr"
+        self.mux = mux
 
     def run(self) -> None:
         while True:
-            time.sleep(30)
+            time.sleep(10)
+            print(f"MUX: {self.mux}")
             for thread in threading.enumerate():
                 print(f"DEBUG: {thread.name}")
 
@@ -258,8 +254,8 @@ class SocketServer:
         self._thread = SockAcceptThread(sock=self._sock, mux=self._mux)
         self._thread.start()
         # Note: Uncomment to figure out what thread is not exiting properly
-        # self._dbg_thread = DebugThread(mux=self._mux)
-        # self._dbg_thread.start()
+        self._dbg_thread = DebugThread(mux=self._mux)
+        self._dbg_thread.start()
 
     def stop(self) -> None:
         if self._sock:
